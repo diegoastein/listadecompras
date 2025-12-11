@@ -1,0 +1,808 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Plus, 
+  ShoppingCart, 
+  List, 
+  Check, 
+  Trash2, 
+  History, 
+  Search,
+  ArrowLeft,
+  Apple,
+  Beef,
+  Milk,
+  Cookie,
+  SprayCan,
+  Package,
+  Pencil,
+  Share2,
+  X,
+  Copy // Agregado icono de copiar
+} from 'lucide-react';
+
+// --- CONFIGURACIÓN DE CATEGORÍAS ---
+const CATEGORIES = [
+  { id: 'verdureria', name: 'Verdulería', icon: <Apple size={20} />, color: 'bg-green-100 text-green-700' },
+  { id: 'carniceria', name: 'Carnicería', icon: <Beef size={20} />, color: 'bg-red-100 text-red-700' },
+  { id: 'lacteos', name: 'Lácteos/Frescos', icon: <Milk size={20} />, color: 'bg-blue-100 text-blue-700' },
+  { id: 'almacen', name: 'Almacén', icon: <Cookie size={20} />, color: 'bg-orange-100 text-orange-700' },
+  { id: 'limpieza', name: 'Limpieza/Perf', icon: <SprayCan size={20} />, color: 'bg-purple-100 text-purple-700' },
+  { id: 'varios', name: 'Bebidas/Varios', icon: <Package size={20} />, color: 'bg-gray-100 text-gray-700' },
+];
+
+const getCategoryDetails = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[5];
+
+// --- LISTA DEFAULT ARGENTINA (50 Ítems) ---
+const DEFAULT_INVENTORY = [
+  // Almacén
+  { id: 'def-1', name: 'Yerba Mate', category: 'almacen' },
+  { id: 'def-2', name: 'Azúcar', category: 'almacen' },
+  { id: 'def-3', name: 'Aceite de Girasol', category: 'almacen' },
+  { id: 'def-4', name: 'Harina 0000', category: 'almacen' },
+  { id: 'def-5', name: 'Fideos Tallarines', category: 'almacen' },
+  { id: 'def-6', name: 'Arroz', category: 'almacen' },
+  { id: 'def-7', name: 'Puré de Tomate', category: 'almacen' },
+  { id: 'def-8', name: 'Galletitas de Agua', category: 'almacen' },
+  { id: 'def-9', name: 'Galletitas Dulces', category: 'almacen' },
+  { id: 'def-10', name: 'Pan Lactal', category: 'almacen' },
+  { id: 'def-11', name: 'Mayonesa', category: 'almacen' },
+  { id: 'def-12', name: 'Café', category: 'almacen' },
+  { id: 'def-13', name: 'Té', category: 'almacen' },
+  { id: 'def-14', name: 'Mermelada', category: 'almacen' },
+  { id: 'def-15', name: 'Sal Fina', category: 'almacen' },
+  { id: 'def-16', name: 'Pan Rallado', category: 'almacen' },
+  { id: 'def-17', name: 'Polenta', category: 'almacen' },
+  { id: 'def-18', name: 'Latas de Conserva', category: 'almacen' },
+  
+  // Lácteos / Frescos
+  { id: 'def-19', name: 'Leche Entera/Desc.', category: 'lacteos' },
+  { id: 'def-20', name: 'Manteca', category: 'lacteos' },
+  { id: 'def-21', name: 'Queso Cremoso', category: 'lacteos' },
+  { id: 'def-22', name: 'Yogur', category: 'lacteos' },
+  { id: 'def-23', name: 'Dulce de Leche', category: 'lacteos' },
+  { id: 'def-24', name: 'Queso Rallado', category: 'lacteos' },
+  { id: 'def-25', name: 'Tapas de Empanada', category: 'lacteos' },
+  { id: 'def-26', name: 'Huevos', category: 'lacteos' },
+  
+  // Carnicería
+  { id: 'def-27', name: 'Asado / Vacío', category: 'carniceria' },
+  { id: 'def-28', name: 'Carne Picada', category: 'carniceria' },
+  { id: 'def-29', name: 'Milanesas', category: 'carniceria' },
+  { id: 'def-30', name: 'Pollo Entero/Trozado', category: 'carniceria' },
+  { id: 'def-31', name: 'Chorizos', category: 'carniceria' },
+  
+  // Verdulería
+  { id: 'def-32', name: 'Papas', category: 'verdureria' },
+  { id: 'def-33', name: 'Cebollas', category: 'verdureria' },
+  { id: 'def-34', name: 'Tomate Redondo', category: 'verdureria' },
+  { id: 'def-35', name: 'Lechuga', category: 'verdureria' },
+  { id: 'def-36', name: 'Zanahoria', category: 'verdureria' },
+  { id: 'def-37', name: 'Bananas', category: 'verdureria' },
+  { id: 'def-38', name: 'Manzanas', category: 'verdureria' },
+  { id: 'def-39', name: 'Morrón', category: 'verdureria' },
+  { id: 'def-40', name: 'Zapallo Anco', category: 'verdureria' },
+  
+  // Limpieza / Perfumería
+  { id: 'def-41', name: 'Lavandina', category: 'limpieza' },
+  { id: 'def-42', name: 'Detergente', category: 'limpieza' },
+  { id: 'def-43', name: 'Jabón Ropa', category: 'limpieza' },
+  { id: 'def-44', name: 'Papel Higiénico', category: 'limpieza' },
+  { id: 'def-45', name: 'Rollo de Cocina', category: 'limpieza' },
+  { id: 'def-46', name: 'Shampoo/Acond.', category: 'limpieza' },
+  { id: 'def-47', name: 'Dentífrico', category: 'limpieza' },
+  
+  // Varios / Bebidas
+  { id: 'def-48', name: 'Gaseosa Cola', category: 'varios' },
+  { id: 'def-49', name: 'Fernet', category: 'varios' },
+  { id: 'def-50', name: 'Vino Malbec', category: 'varios' },
+];
+
+// --- APP ICON COMPONENT ---
+const AppIcon = ({ size = 32 }) => (
+  <div 
+    className="bg-gradient-to-br from-emerald-400 to-sky-600 rounded-xl flex items-center justify-center shadow-lg transform rotate-3"
+    style={{ width: size, height: size }}
+  >
+    <ShoppingCart className="text-white drop-shadow-sm" size={size * 0.6} strokeWidth={2.5} />
+  </div>
+);
+
+// --- MAIN APP ---
+export default function SuperLista() {
+  // --- STATE ---
+  const [view, setView] = useState('home'); // home, active-list, history
+
+  // Load Inventory from LocalStorage or use Defaults
+  const [inventory, setInventory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('superlista_inventory');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) return parsed.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      return DEFAULT_INVENTORY.sort((a, b) => a.name.localeCompare(b.name));
+    } catch (e) {
+      console.error("Error loading inventory", e);
+      return DEFAULT_INVENTORY.sort((a, b) => a.name.localeCompare(b.name));
+    }
+  });
+
+  // Load History
+  const [savedLists, setSavedLists] = useState(() => {
+    try {
+      const saved = localStorage.getItem('superlista_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Load Active Session
+  const [activeListItems, setActiveListItems] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('superlista_active_session');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  
+  // UI State
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('almacen');
+  const [saveListName, setSaveListName] = useState('');
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showToast, setShowToast] = useState(false); // Estado para notificación toast
+
+  // --- NATIVE APP FEEL INJECTION ---
+  useEffect(() => {
+    // Inject Meta Tags for Mobile Web App look
+    const metaTheme = document.createElement('meta');
+    metaTheme.name = "theme-color";
+    metaTheme.content = "#0284c7"; // Sky-600
+    document.head.appendChild(metaTheme);
+
+    const metaMobile = document.createElement('meta');
+    metaMobile.name = "apple-mobile-web-app-capable";
+    metaMobile.content = "yes";
+    document.head.appendChild(metaMobile);
+
+    const metaStatus = document.createElement('meta');
+    metaStatus.name = "apple-mobile-web-app-status-bar-style";
+    metaStatus.content = "black-translucent";
+    document.head.appendChild(metaStatus);
+
+    return () => {
+      if(document.head.contains(metaTheme)) document.head.removeChild(metaTheme);
+      if(document.head.contains(metaMobile)) document.head.removeChild(metaMobile);
+      if(document.head.contains(metaStatus)) document.head.removeChild(metaStatus);
+    };
+  }, []);
+
+  // --- PERSISTENCE EFFECTS ---
+  useEffect(() => {
+    localStorage.setItem('superlista_inventory', JSON.stringify(inventory));
+  }, [inventory]);
+
+  useEffect(() => {
+    localStorage.setItem('superlista_history', JSON.stringify(savedLists));
+  }, [savedLists]);
+
+  useEffect(() => {
+    sessionStorage.setItem('superlista_active_session', JSON.stringify(activeListItems));
+  }, [activeListItems]);
+
+
+  // --- LOGIC ---
+  const handleSaveItem = () => {
+    if (!newItemName.trim()) return;
+
+    if (editingItem) {
+      const updatedItem = {
+        ...editingItem,
+        name: newItemName.trim(),
+        category: newItemCategory
+      };
+      setInventory(prev => prev.map(i => i.id === editingItem.id ? updatedItem : i).sort((a, b) => a.name.localeCompare(b.name)));
+      setActiveListItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, name: updatedItem.name, category: updatedItem.category } : i));
+    } else {
+      const newItem = {
+        id: `item-${Date.now()}`,
+        name: newItemName.trim(),
+        category: newItemCategory,
+        createdAt: Date.now()
+      };
+      const exists = inventory.some(i => i.name.toLowerCase() === newItem.name.toLowerCase());
+      if (!exists) {
+        setInventory(prev => [...prev, newItem].sort((a, b) => a.name.localeCompare(b.name)));
+      }
+      addToActiveList(exists ? inventory.find(i => i.name.toLowerCase() === newItem.name.toLowerCase()) : newItem);
+    }
+    setNewItemName('');
+    setEditingItem(null);
+    setShowItemModal(false);
+  };
+
+  const openEditModal = (e, item) => {
+    e.stopPropagation();
+    setEditingItem(item);
+    setNewItemName(item.name);
+    setNewItemCategory(item.category);
+    setShowItemModal(true);
+  };
+
+  const openAddModal = () => {
+    setEditingItem(null);
+    setNewItemName(searchTerm);
+    setNewItemCategory('almacen');
+    setShowItemModal(true);
+  };
+
+  const addToActiveList = (item) => {
+    if (activeListItems.some(i => i.name === item.name)) return;
+    setActiveListItems(prev => [...prev, {
+      ...item,
+      uniqueId: `list-item-${Date.now()}`,
+      checked: false
+    }]);
+  };
+
+  const removeFromActiveList = (itemName) => {
+    setActiveListItems(prev => prev.filter(i => i.name !== itemName));
+  };
+
+  const toggleItemInList = (item) => {
+    const exists = activeListItems.find(i => i.name === item.name);
+    if (exists) {
+      removeFromActiveList(item.name);
+    } else {
+      addToActiveList(item);
+    }
+  };
+
+  const toggleCheck = (itemName) => {
+    // Vibrate on check (if supported)
+    if (navigator.vibrate) navigator.vibrate(10);
+    
+    setActiveListItems(prev => prev.map(item => 
+      item.name === itemName ? { ...item, checked: !item.checked } : item
+    ));
+  };
+
+  const saveCurrentList = () => {
+    if (!saveListName.trim()) return;
+    const newList = {
+      id: `list-${Date.now()}`,
+      name: saveListName,
+      items: activeListItems,
+      createdAt: Date.now(),
+      completed: activeListItems.every(i => i.checked)
+    };
+    setSavedLists(prev => [newList, ...prev]);
+    setSaveListName('');
+    setShowSaveModal(false);
+    setView('history');
+    setActiveListItems([]);
+  };
+
+  const loadList = (list) => {
+    const items = list.items.map(i => ({...i, checked: false}));
+    setActiveListItems(items);
+    setView('active-list');
+  };
+
+  const deleteSavedList = (e, listId) => {
+    e.stopPropagation();
+    if(confirm('¿Borrar esta lista guardada?')) {
+        setSavedLists(prev => prev.filter(l => l.id !== listId));
+    }
+  };
+
+  const deleteInventoryItem = (e, itemId) => {
+    e.stopPropagation();
+    if(confirm('¿Borrar este ítem del inventario?')) {
+      setInventory(prev => prev.filter(i => i.id !== itemId));
+      setActiveListItems(prev => prev.filter(i => i.id !== itemId));
+    }
+  }
+
+  // --- LOGICA DE COMPARTIR ACTUALIZADA ---
+  const generateListText = () => {
+    let text = "🛒 *SuperLista de Compras*\n\n";
+    const groups = {};
+    activeListItems.forEach(item => {
+      if (!groups[item.category]) groups[item.category] = [];
+      groups[item.category].push(item);
+    });
+    Object.keys(groups).forEach(catId => {
+      const items = groups[catId];
+      if (items.length > 0) {
+        text += `*${getCategoryDetails(catId).name.split('/')[0]}*\n`;
+        items.forEach(item => {
+          const icon = item.checked ? '✅' : '⬜';
+          text += `${icon} ${item.name}\n`;
+        });
+        text += "\n";
+      }
+    });
+    return text;
+  };
+
+  const triggerToast = () => {
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
+
+  const copyToClipboard = () => {
+    const text = generateListText();
+    // Usar API moderna de portapapeles o fallback
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(triggerToast).catch(err => console.error("Error al copiar", err));
+    } else {
+        // Fallback antiguo
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        triggerToast();
+    }
+  };
+
+  const shareList = async () => {
+    const text = generateListText();
+    
+    // 1. Intentar API Nativa de Compartir (Mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'SuperLista de Compras',
+          text: text,
+        });
+        return;
+      } catch (err) {
+        // Si el usuario cancela, no hacemos nada.
+        if (err.name !== 'AbortError') console.log('Error sharing:', err);
+      }
+    }
+
+    // 2. Fallback a WhatsApp Web (Link simuado para evitar bloqueos)
+    const url = `https://wa.me/?text=${encodeURIComponent(text + "Enviado desde SuperLista Web")}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // --- FILTERED VIEWS ---
+  const filteredInventory = useMemo(() => {
+    if (!searchTerm) return inventory;
+    return inventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [inventory, searchTerm]);
+
+  const groupedActiveList = useMemo(() => {
+    const groups = {};
+    activeListItems.forEach(item => {
+      if (!groups[item.category]) groups[item.category] = [];
+      groups[item.category].push(item);
+    });
+    return groups;
+  }, [activeListItems]);
+
+
+  // --- RENDER HELPERS ---
+  const Modal = ({ children, onClose }) => (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
+      <div 
+        className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom-full duration-300 pb-safe-bottom"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6 sm:hidden opacity-50" />
+        {children}
+      </div>
+      <div className="absolute inset-0 -z-10" onClick={onClose} />
+    </div>
+  );
+
+  const Toast = () => (
+    <div className={`fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl z-50 transition-all duration-300 ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+       <span className="font-bold text-sm flex items-center gap-2"><Check size={16}/> Copiado al portapapeles</span>
+    </div>
+  );
+
+  // --- VIEW: HOME (Planning) ---
+  if (view === 'home') {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50 text-slate-900 font-sans select-none overflow-hidden">
+        {/* Native-like Header */}
+        <header className="bg-white pt-safe-top pb-3 px-4 shadow-sm z-10 sticky top-0 border-b border-gray-100">
+          <div className="flex justify-between items-center h-12">
+            <div className="flex items-center gap-3">
+              <AppIcon size={40} />
+              <div>
+                <h1 className="text-xl font-extrabold tracking-tight text-slate-800 leading-none">SuperLista</h1>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Planificador</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setView('history')}
+              className="p-2 text-gray-400 hover:text-sky-600 hover:bg-sky-50 rounded-full transition-colors active:scale-90 transform"
+            >
+              <History size={26} strokeWidth={2} />
+            </button>
+          </div>
+          
+          {/* Status Card */}
+          <div className="mt-4 bg-gradient-to-r from-sky-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg shadow-sky-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-xs font-semibold text-sky-100 uppercase tracking-wider block mb-1">En tu changuito</span>
+                <p className="font-bold text-2xl leading-none">{activeListItems.length} <span className="text-base font-normal opacity-80">productos</span></p>
+              </div>
+              {activeListItems.length > 0 && (
+                <button 
+                  onClick={() => setView('active-list')}
+                  className="bg-white text-sky-600 px-5 py-2.5 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform"
+                >
+                  Ir a Comprar
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Inventory List */}
+        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-32 overscroll-contain">
+          <div className="relative mb-6">
+            <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
+            <input 
+              type="text"
+              placeholder="Buscar o agregar..."
+              className="w-full bg-white pl-12 pr-4 py-3.5 rounded-2xl shadow-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent text-lg"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-between items-end mb-4 px-1">
+             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tus Productos</h2>
+             <span className="text-[10px] font-bold bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">{filteredInventory.length}</span>
+          </div>
+          
+          <div className="space-y-3">
+            {filteredInventory.map(item => {
+              const cat = getCategoryDetails(item.category);
+              const isSelected = activeListItems.some(i => i.name === item.name);
+              
+              return (
+                <div 
+                  key={item.id} 
+                  onClick={() => toggleItemInList(item)}
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all cursor-pointer active:scale-[0.98] ${isSelected ? 'bg-sky-50 border-sky-500 shadow-sm' : 'bg-white border-transparent shadow-sm'}`}
+                >
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${cat.color}`}>
+                      {cat.icon}
+                    </div>
+                    <span className={`font-semibold text-lg truncate ${isSelected ? 'text-sky-900' : 'text-slate-700'}`}>
+                      {item.name}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 pl-2">
+                     <button 
+                        onClick={(e) => openEditModal(e, item)}
+                        className="p-2 text-gray-300 active:text-sky-600 rounded-full"
+                     >
+                       <Pencil size={18} />
+                     </button>
+                    
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ml-1 transition-colors ${isSelected ? 'bg-sky-500 border-sky-500' : 'border-gray-300'}`}>
+                      {isSelected ? <Check size={14} className="text-white" strokeWidth={3} /> : <Plus size={14} className="text-gray-300" />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {filteredInventory.length === 0 && searchTerm && (
+               <div className="text-center py-10">
+                 <p className="text-gray-400 mb-4">No encontré "{searchTerm}"</p>
+                 <button 
+                   onClick={openAddModal}
+                   className="text-sky-600 font-bold bg-sky-50 px-6 py-3 rounded-xl active:bg-sky-100"
+                 >
+                   + Crear "{searchTerm}"
+                 </button>
+               </div>
+            )}
+          </div>
+        </div>
+
+        {/* FAB */}
+        <div className="fixed bottom-6 right-6 z-20">
+            <button 
+            onClick={openAddModal}
+            className="bg-slate-900 text-white w-16 h-16 rounded-full shadow-2xl shadow-slate-400/50 flex items-center justify-center active:scale-90 transition-transform"
+            >
+            <Plus size={32} />
+            </button>
+        </div>
+
+        {/* Native-style Modal */}
+        {showItemModal && (
+          <Modal onClose={() => { setShowItemModal(false); setEditingItem(null); }}>
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-slate-800">
+                    {editingItem ? 'Editar' : 'Nuevo Producto'}
+                </h3>
+                <button onClick={() => setShowItemModal(false)} className="bg-gray-100 p-2 rounded-full">
+                    <X size={20} className="text-gray-500" />
+                </button>
+            </div>
+            
+            <input 
+                autoFocus
+                className="w-full bg-gray-50 border-2 border-transparent focus:border-sky-500 focus:bg-white rounded-xl p-4 text-xl font-medium focus:outline-none mb-6 transition-colors"
+                placeholder="Ej: Milanesas de Soja"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+            />
+            
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Categoría</p>
+            <div className="grid grid-cols-3 gap-3 mb-8">
+                {CATEGORIES.map(cat => (
+                <button 
+                    key={cat.id}
+                    onClick={() => setNewItemCategory(cat.id)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 ${newItemCategory === cat.id ? 'bg-sky-50 border-sky-500 text-sky-800 shadow-sm' : 'border-gray-100 text-gray-400 bg-white'}`}
+                >
+                    <div className="mb-1.5">{cat.icon}</div>
+                    <span className="text-[10px] font-bold">{cat.name.split('/')[0]}</span>
+                </button>
+                ))}
+            </div>
+
+            <div className="flex gap-4">
+                {editingItem && (
+                    <button 
+                        onClick={(e) => { deleteInventoryItem(e, editingItem.id); setShowItemModal(false); }}
+                        className="p-4 rounded-xl bg-red-50 text-red-500 font-bold active:scale-95 transition-transform"
+                    >
+                        <Trash2 />
+                    </button>
+                )}
+                <button 
+                onClick={handleSaveItem}
+                className="flex-1 py-4 bg-slate-900 text-white font-bold text-lg rounded-xl shadow-lg active:scale-95 transition-transform"
+                >
+                {editingItem ? 'Guardar Cambios' : 'Agregar Producto'}
+                </button>
+            </div>
+          </Modal>
+        )}
+      </div>
+    );
+  }
+
+  // --- VIEW: ACTIVE LIST (Shopping Mode) ---
+  if (view === 'active-list') {
+    const totalItems = activeListItems.length;
+    const checkedItems = activeListItems.filter(i => i.checked).length;
+    const progress = totalItems === 0 ? 0 : (checkedItems / totalItems) * 100;
+
+    return (
+      <div className="flex flex-col h-screen bg-slate-50 font-sans select-none">
+        {/* Navigation Bar */}
+        <header className="bg-white pt-safe-top sticky top-0 z-20 shadow-sm">
+          <div className="flex items-center justify-between p-2 h-16 px-4">
+            <button 
+                onClick={() => setView('home')} 
+                className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 active:bg-gray-100"
+            >
+              <ArrowLeft size={24} strokeWidth={2.5} />
+            </button>
+            <div className="text-center">
+              <h2 className="font-extrabold text-slate-800 text-lg">Modo Compra</h2>
+              <div className="text-[10px] font-bold text-sky-600 uppercase tracking-widest">
+                {checkedItems}/{totalItems} completado
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+               {/* Copy Button (Backup) */}
+               <button
+                 onClick={copyToClipboard}
+                 disabled={totalItems === 0}
+                 className="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 active:bg-gray-100 disabled:opacity-30"
+                 title="Copiar lista"
+               >
+                 <Copy size={22} />
+               </button>
+
+               {/* Share Button (Primary) */}
+               <button
+                 onClick={shareList}
+                 disabled={totalItems === 0}
+                 className="w-10 h-10 flex items-center justify-center rounded-full text-green-600 active:bg-green-50 disabled:opacity-30"
+                 title="Compartir"
+               >
+                 <Share2 size={22} />
+               </button>
+
+               <button 
+                 onClick={() => setShowSaveModal(true)}
+                 disabled={totalItems === 0}
+                 className="text-sky-600 font-bold text-sm px-2 py-1 active:opacity-50 disabled:opacity-30"
+               >
+                 Guardar
+               </button>
+            </div>
+          </div>
+          {/* Custom Progress Bar */}
+          <div className="h-1.5 bg-gray-100 w-full">
+            <div 
+              className="h-full bg-gradient-to-r from-sky-400 to-emerald-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(56,189,248,0.5)]" 
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-4 pb-10">
+          {totalItems === 0 ? (
+             <div className="flex flex-col items-center justify-center h-full text-gray-400">
+               <div className="bg-gray-100 p-6 rounded-full mb-4">
+                 <ShoppingCart size={40} className="text-gray-300" />
+               </div>
+               <p className="font-medium">Lista vacía</p>
+               <button onClick={() => setView('home')} className="mt-4 text-sky-600 font-bold">Volver a planificar</button>
+             </div>
+          ) : (
+            Object.keys(groupedActiveList).map(catId => {
+              const cat = getCategoryDetails(catId);
+              return (
+                <div key={catId} className="mb-6 animate-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center gap-2 mb-3 px-1 sticky top-0 z-10">
+                    <span className={`p-1.5 rounded-lg ${cat.color}`}>{cat.icon}</span>
+                    <h3 className="font-extrabold text-slate-700 text-sm uppercase tracking-wider">{cat.name}</h3>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    {groupedActiveList[catId].map((item, idx) => (
+                      <div 
+                        key={idx}
+                        onClick={() => toggleCheck(item.name)}
+                        className={`
+                          flex items-center p-4 border-b border-slate-50 last:border-0 cursor-pointer transition-all active:bg-gray-50 select-none
+                          ${item.checked ? 'bg-slate-50/50' : 'bg-white'}
+                        `}
+                      >
+                        <div className={`
+                          w-8 h-8 rounded-full border-2 mr-4 flex items-center justify-center transition-all duration-300 transform flex-shrink-0
+                          ${item.checked ? 'bg-emerald-500 border-emerald-500 scale-100 rotate-0' : 'border-slate-300 scale-100'}
+                        `}>
+                          {item.checked && <Check size={18} className="text-white" strokeWidth={4} />}
+                        </div>
+                        <span className={`text-lg font-medium transition-colors ${item.checked ? 'text-gray-400 line-through decoration-2 decoration-gray-200' : 'text-slate-700'}`}>
+                          {item.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Save Bottom Sheet */}
+        {showSaveModal && (
+          <Modal onClose={() => setShowSaveModal(false)}>
+              <h3 className="text-2xl font-bold text-slate-800 mb-2">Finalizar Compra</h3>
+              <p className="text-slate-500 mb-6">¿Quieres guardar esta lista en tu historial?</p>
+              
+              <div className="bg-gray-50 p-4 rounded-xl mb-6">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Nombre de la lista</label>
+                <input 
+                    autoFocus
+                    className="w-full bg-transparent text-xl font-bold text-slate-800 focus:outline-none placeholder-gray-300"
+                    placeholder="Ej: Asado del Domingo"
+                    value={saveListName}
+                    onChange={(e) => setSaveListName(e.target.value)}
+                />
+              </div>
+              
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setShowSaveModal(false)}
+                  className="flex-1 py-4 text-slate-500 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform"
+                >
+                  Volver
+                </button>
+                <button 
+                  onClick={saveCurrentList}
+                  className="flex-1 py-4 bg-sky-600 text-white font-bold rounded-xl shadow-lg shadow-sky-200 active:scale-95 transition-transform"
+                >
+                  Guardar
+                </button>
+              </div>
+          </Modal>
+        )}
+        <Toast />
+      </div>
+    );
+  }
+
+  // --- VIEW: HISTORY ---
+  if (view === 'history') {
+    return (
+      <div className="flex flex-col h-screen bg-slate-50 font-sans select-none">
+        <header className="bg-white pt-safe-top border-b border-gray-100 p-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <button 
+                onClick={() => setView('home')} 
+                className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
+            >
+              <ArrowLeft size={24} className="text-slate-800" strokeWidth={2.5} />
+            </button>
+            <h1 className="font-extrabold text-slate-800 text-lg">Historial</h1>
+            <div className="w-10" />
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {savedLists.length === 0 ? (
+            <div className="text-center py-20 text-gray-400">
+              <History size={60} className="mx-auto mb-6 opacity-20" strokeWidth={1} />
+              <p className="font-medium">Sin historial aún</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {savedLists.map(list => (
+                <div 
+                  key={list.id}
+                  onClick={() => loadList(list)}
+                  className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-xl">{list.name}</h3>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mt-1">
+                        {list.createdAt ? new Date(list.createdAt).toLocaleDateString() : 'Reciente'}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={(e) => deleteSavedList(e, list.id)}
+                      className="text-gray-300 hover:text-red-500 p-2 -mr-2 -mt-2 active:bg-red-50 rounded-full"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <List size={14} className="text-slate-500" />
+                        <span className="text-sm font-bold text-slate-600">{list.items?.length || 0} ítems</span>
+                    </div>
+                    {list.completed && (
+                      <span className="bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1">
+                        <Check size={12} strokeWidth={4} /> Completa
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
