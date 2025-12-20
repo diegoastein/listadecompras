@@ -132,9 +132,12 @@
             const [savedLists, setSavedLists] = useState(() => {
                 try { return JSON.parse(localStorage.getItem('superlista_history') || '[]'); } catch { return []; }
             });
+
+            // ✅ LISTA ACTIVA PERSISTENTE (localStorage)
             const [activeListItems, setActiveListItems] = useState(() => {
-                try { return JSON.parse(sessionStorage.getItem('superlista_active_session') || '[]'); } catch { return []; }
+                try { return JSON.parse(localStorage.getItem('superlista_active_list') || '[]'); } catch { return []; }
             });
+
             const [geminiApiKey, setGeminiApiKey] = useState(() => {
                 return localStorage.getItem('superlista_gemini_key') || '';
             });
@@ -158,7 +161,10 @@
             // Persistencia
             useEffect(() => localStorage.setItem('superlista_inventory', JSON.stringify(inventory)), [inventory]);
             useEffect(() => localStorage.setItem('superlista_history', JSON.stringify(savedLists)), [savedLists]);
-            useEffect(() => sessionStorage.setItem('superlista_active_session', JSON.stringify(activeListItems)), [activeListItems]);
+
+            // ✅ Guardar siempre la lista activa, incluso si se cierra el navegador
+            useEffect(() => localStorage.setItem('superlista_active_list', JSON.stringify(activeListItems)), [activeListItems]);
+
             useEffect(() => localStorage.setItem('superlista_gemini_key', geminiApiKey), [geminiApiKey]);
 
             // --- Lógica GEMINI AI (Chef Mágico) ---
@@ -285,9 +291,11 @@
                 setActiveListItems(prev => prev.map(i => i.name === name ? { ...i, checked: !i.checked } : i));
             };
 
+            // ✅ BORRAR LISTA COMPLETA Y EMPEZAR DE CERO
             const clearActiveList = () => {
-                if (confirm('¿Estás seguro de que quieres vaciar toda la lista de compras?')) {
+                if (confirm('¿Borrar la lista actual y empezar de cero?')) {
                     setActiveListItems([]);
+                    try { localStorage.removeItem('superlista_active_list'); } catch {}
                     setView('home');
                 }
             };
@@ -415,9 +423,18 @@
                                     <p className="font-bold text-2xl leading-none">{activeListItems.length} <span className="text-base font-normal opacity-80">ítems</span></p>
                                 </div>
                                 {activeListItems.length > 0 && (
-                                    <button onClick={() => setView('active-list')} className="bg-white text-green-600 px-5 py-2.5 rounded-xl font-bold text-sm shadow active:scale-95 transition-transform">
-                                        Ir a Comprar
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={clearActiveList}
+                                            className="bg-white/20 text-white px-4 py-2.5 rounded-xl font-bold text-sm border border-white/30 active:scale-95 transition-transform"
+                                            title="Borrar lista"
+                                        >
+                                            Borrar
+                                        </button>
+                                        <button onClick={() => setView('active-list')} className="bg-white text-green-600 px-5 py-2.5 rounded-xl font-bold text-sm shadow active:scale-95 transition-transform">
+                                            Ir a Comprar
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </header>
@@ -657,3 +674,4 @@
     </script>
 </body>
 </html>
+```0
