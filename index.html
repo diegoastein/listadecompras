@@ -1,91 +1,89 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Compras</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <style>
-        .tachado { text-decoration: line-through; color: gray; }
-        .container { max-width: 500px; margin-top: 50px; }
+        /* MANTENGO TUS ESTILOS ORIGINALES */
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); width: 300px; text-align: center; }
+        input { padding: 10px; width: 80%; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px; cursor: pointer; border: none; background: #28a745; color: white; border-radius: 4px; margin-top: 10px; }
+        ul { list-style: none; padding: 0; margin-top: 20px; }
+        li { background: #eee; margin: 5px 0; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
+        .delete-btn { background: #dc3545; padding: 5px; font-size: 12px; }
+        
+        /* ESTILO PARA EL NUEVO BOTÓN */
+        .clear-btn { background: #6c757d; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
-    <div id="app" class="container">
-        <h2 class="text-center mb-4">Lista de Compras</h2>
+    <div class="container">
+        <h2>Lista de Compras</h2>
+        <input type="text" id="itemInput" placeholder="Digite um item...">
+        <button onclick="addItem()">Adicionar</button>
+        <ul id="itemList"></ul>
         
-        <div class="input-group mb-3">
-            <input type="text" v-model="nuevoArticulo" @keyup.enter="agregarArticulo" class="form-control" placeholder="Agregar artículo...">
-            <div class="input-group-append">
-                <button @click="agregarArticulo" class="btn btn-primary">Agregar</button>
-            </div>
-        </div>
-
-        <ul class="list-group">
-            <li v-for="(articulo, index) in articulos" :key="index" class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <input type="checkbox" v-model="articulo.comprado" class="mr-2">
-                    <span :class="{ 'tachado': articulo.comprado }">{{ articulo.nombre }}</span>
-                </div>
-                <button @click="eliminarArticulo(index)" class="btn btn-danger btn-sm">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </li>
-        </ul>
-
-        <div class="text-right mt-3">
-            <button v-if="articulos.length > 0" @click="borrarListaCompleta" class="btn btn-outline-danger btn-sm">
-                Borrar lista completa
-            </button>
-        </div>
+        <button id="clearBtn" class="clear-btn" onclick="clearList()" style="display:none;">Limpar Lista</button>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script>
-        new Vue({
-            el: '#app',
-            data: {
-                nuevoArticulo: '',
-                articulos: []
-            },
-            // NUEVO: Cargar los datos al abrir la página
-            mounted() {
-                const guardado = localStorage.getItem('mis-articulos');
-                if (guardado) {
-                    this.articulos = JSON.parse(guardado);
-                }
-            },
-            // NUEVO: Guardar automáticamente cuando cambia la lista
-            watch: {
-                articulos: {
-                    deep: true,
-                    handler(v) {
-                        localStorage.setItem('mis-articulos', JSON.stringify(v));
-                    }
-                }
-            },
-            methods: {
-                agregarArticulo() {
-                    if (this.nuevoArticulo.trim() !== '') {
-                        this.articulos.push({
-                            nombre: this.nuevoArticulo,
-                            comprado: false
-                        });
-                        this.nuevoArticulo = '';
-                    }
-                },
-                eliminarArticulo(index) {
-                    this.articulos.splice(index, 1);
-                },
-                // NUEVO: Función para el botón de borrar todo
-                borrarListaCompleta() {
-                    if (confirm("¿Borrar todos los elementos?")) {
-                        this.articulos = [];
-                    }
-                }
+        const input = document.getElementById('itemInput');
+        const list = document.getElementById('itemList');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // 1. CARGAR AUTOMÁTICAMENTE AL INICIAR
+        window.onload = () => {
+            const savedItems = JSON.parse(localStorage.getItem('myList')) || [];
+            savedItems.forEach(item => renderItem(item));
+            toggleClearButton();
+        };
+
+        function addItem() {
+            const text = input.value.trim();
+            if (text) {
+                renderItem(text);
+                saveList();
+                input.value = '';
+                toggleClearButton();
             }
-        });
+        }
+
+        // Función auxiliar para dibujar el ítem en pantalla
+        function renderItem(text) {
+            const li = document.createElement('li');
+            li.innerHTML = `${text} <button class="delete-btn" onclick="removeItem(this)">X</button>`;
+            list.appendChild(li);
+        }
+
+        function removeItem(btn) {
+            btn.parentElement.remove();
+            saveList();
+            toggleClearButton();
+        }
+
+        // 2. GUARDAR AUTOMÁTICAMENTE
+        function saveList() {
+            const items = [];
+            document.querySelectorAll('#itemList li').forEach(li => {
+                items.push(li.firstChild.textContent.trim());
+            });
+            localStorage.setItem('myList', JSON.stringify(items));
+        }
+
+        // 3. BOTÓN PARA BORRAR TODO
+        function clearList() {
+            if (confirm("Deseja apagar toda a lista?")) {
+                list.innerHTML = '';
+                localStorage.removeItem('myList');
+                toggleClearButton();
+            }
+        }
+
+        function toggleClearButton() {
+            clearBtn.style.display = list.children.length > 0 ? 'block' : 'none';
+        }
     </script>
 </body>
 </html>
