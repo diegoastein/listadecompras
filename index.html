@@ -2,658 +2,91 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SuperLista App</title>
-    
-    <!-- 1. Meta Tags para que parezca App en móviles (AHORA VERDE) -->
-    <meta name="theme-color" content="#16a34a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- ICONO VERDE CON CHANGUITO -->
-    <link rel="apple-touch-icon" href="https://placehold.co/180/16a34a/ffffff/png?text=%F0%9F%9B%92&font=roboto">
-    <link rel="icon" type="image/png" href="https://placehold.co/180/16a34a/ffffff/png?text=%F0%9F%9B%92&font=roboto">
-
-    <!-- 2. Estilos (Tailwind CSS) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    padding: { 'safe-top': 'env(safe-area-inset-top)', 'safe-bottom': 'env(safe-area-inset-bottom)' },
-                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
-                }
-            }
-        }
-    </script>
-
-    <!-- 3. React y Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- 4. Iconos (Lucide) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Compras Pro</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <style>
-        /* Ajustes para sensación nativa */
-        body { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        input, textarea { user-select: text; -webkit-user-select: text; }
+        .tachado { text-decoration: line-through; color: gray; }
+        .container { max-width: 500px; margin-top: 50px; }
+        .btn-borrar-todo { margin-top: 20px; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans overflow-hidden">
-    
-    <!-- Aquí se monta la App -->
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+<body>
+    <div id="app" class="container">
+        <h2 class="text-center mb-4">Lista de Compras</h2>
         
-        // --- COMPONENTE DE ICONO ---
-        const Icon = ({ name, size = 24, className = "", strokeWidth = 2.5 }) => {
-            const ref = React.useRef(null);
-            
-            useEffect(() => {
-                if (ref.current && lucide.icons[name]) {
-                    ref.current.innerHTML = '';
-                    const iconNode = lucide.icons[name];
-                    
-                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    svg.setAttribute("width", size);
-                    svg.setAttribute("height", size);
-                    svg.setAttribute("viewBox", "0 0 24 24");
-                    svg.setAttribute("fill", "none");
-                    svg.setAttribute("stroke", "currentColor");
-                    svg.setAttribute("stroke-width", strokeWidth);
-                    svg.setAttribute("stroke-linecap", "round");
-                    svg.setAttribute("stroke-linejoin", "round");
-                    svg.classList.add("lucide", `lucide-${name}`);
-                    if(className) className.split(' ').forEach(c => svg.classList.add(c));
-                    
-                    iconNode.forEach(([tag, attrs]) => {
-                        const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-                        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-                        svg.appendChild(el);
-                    });
-                    ref.current.appendChild(svg);
-                }
-            }, [name, size, className, strokeWidth]);
-
-            return <span ref={ref} className="flex items-center justify-center" />;
-        };
-
-        // --- DATOS Y CATEGORÍAS ---
-        const CATEGORIES = [
-            { id: 'verdureria', name: 'Verdulería', icon: 'Apple', color: 'bg-green-100 text-green-700' },
-            { id: 'carniceria', name: 'Carnicería', icon: 'Beef', color: 'bg-red-100 text-red-700' },
-            { id: 'lacteos', name: 'Lácteos/Frescos', icon: 'Milk', color: 'bg-blue-100 text-blue-700' },
-            { id: 'almacen', name: 'Almacén', icon: 'Cookie', color: 'bg-orange-100 text-orange-700' },
-            { id: 'limpieza', name: 'Limpieza/Perf', icon: 'SprayCan', color: 'bg-purple-100 text-purple-700' },
-            { id: 'varios', name: 'Bebidas/Varios', icon: 'Package', color: 'bg-gray-100 text-gray-700' },
-        ];
-
-        const getCategoryDetails = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[5];
-
-        const DEFAULT_INVENTORY = [
-             { id: 'def-1', name: 'Yerba Mate', category: 'almacen' }, { id: 'def-2', name: 'Azúcar', category: 'almacen' },
-             { id: 'def-3', name: 'Aceite', category: 'almacen' }, { id: 'def-4', name: 'Harina', category: 'almacen' },
-             { id: 'def-5', name: 'Fideos', category: 'almacen' }, { id: 'def-6', name: 'Arroz', category: 'almacen' },
-             { id: 'def-7', name: 'Puré Tomate', category: 'almacen' }, { id: 'def-8', name: 'Galletitas', category: 'almacen' },
-             { id: 'def-19', name: 'Leche', category: 'lacteos' }, { id: 'def-20', name: 'Manteca', category: 'lacteos' },
-             { id: 'def-21', name: 'Queso Cremoso', category: 'lacteos' }, { id: 'def-22', name: 'Yogur', category: 'lacteos' },
-             { id: 'def-27', name: 'Asado', category: 'carniceria' }, { id: 'def-28', name: 'Carne Picada', category: 'carniceria' },
-             { id: 'def-29', name: 'Milanesas', category: 'carniceria' }, { id: 'def-30', name: 'Pollo', category: 'carniceria' },
-             { id: 'def-32', name: 'Papas', category: 'verdureria' }, { id: 'def-33', name: 'Cebollas', category: 'verdureria' },
-             { id: 'def-34', name: 'Tomate', category: 'verdureria' }, { id: 'def-35', name: 'Lechuga', category: 'verdureria' },
-             { id: 'def-41', name: 'Lavandina', category: 'limpieza' }, { id: 'def-42', name: 'Detergente', category: 'limpieza' },
-             { id: 'def-44', name: 'Papel Higiénico', category: 'limpieza' }, { id: 'def-48', name: 'Gaseosa', category: 'varios' },
-             { id: 'def-49', name: 'Fernet', category: 'varios' }, { id: 'def-50', name: 'Vino', category: 'varios' },
-        ];
-
-        const AppIcon = ({ size = 32 }) => (
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg transform rotate-3" style={{ width: size, height: size }}>
-                <Icon name="ShoppingCart" size={size * 0.6} className="text-white" strokeWidth={3} />
+        <div class="input-group mb-3">
+            <input type="text" v-model="nuevoArticulo" @keyup.enter="agregarArticulo" class="form-control" placeholder="Agregar artículo...">
+            <div class="input-group-append">
+                <button @click="agregarArticulo" class="btn btn-primary">Agregar</button>
             </div>
-        );
+        </div>
 
-        // --- APLICACIÓN PRINCIPAL ---
-        function SuperLista() {
-            const [view, setView] = useState('home'); // home, active-list, history, chef
-            
-            // --- ESTADOS DE PERSISTENCIA ---
-            const [inventory, setInventory] = useState(() => {
-                try {
-                    const saved = localStorage.getItem('superlista_inventory');
-                    return saved ? JSON.parse(saved) : DEFAULT_INVENTORY;
-                } catch { return DEFAULT_INVENTORY; }
-            });
-            const [savedLists, setSavedLists] = useState(() => {
-                try { return JSON.parse(localStorage.getItem('superlista_history') || '[]'); } catch { return []; }
-            });
-            const [activeListItems, setActiveListItems] = useState(() => {
-                try { return JSON.parse(sessionStorage.getItem('superlista_active_session') || '[]'); } catch { return []; }
-            });
-            const [geminiApiKey, setGeminiApiKey] = useState(() => {
-                return localStorage.getItem('superlista_gemini_key') || '';
-            });
-            
-            // Estado UI General
-            const [showItemModal, setShowItemModal] = useState(false);
-            const [editingItem, setEditingItem] = useState(null);
-            const [newItemName, setNewItemName] = useState('');
-            const [newItemCategory, setNewItemCategory] = useState('almacen');
-            const [saveListName, setSaveListName] = useState('');
-            const [showSaveModal, setShowSaveModal] = useState(false);
-            const [searchTerm, setSearchTerm] = useState('');
-            const [showToast, setShowToast] = useState(false);
-
-            // Estado Chef IA
-            const [chefPrompt, setChefPrompt] = useState('');
-            const [isChefLoading, setIsChefLoading] = useState(false);
-            const [chefItems, setChefItems] = useState(null);
-            const [showSettingsModal, setShowSettingsModal] = useState(false);
-
-            // Persistencia
-            useEffect(() => localStorage.setItem('superlista_inventory', JSON.stringify(inventory)), [inventory]);
-            useEffect(() => localStorage.setItem('superlista_history', JSON.stringify(savedLists)), [savedLists]);
-            useEffect(() => sessionStorage.setItem('superlista_active_session', JSON.stringify(activeListItems)), [activeListItems]);
-            useEffect(() => localStorage.setItem('superlista_gemini_key', geminiApiKey), [geminiApiKey]);
-
-            // --- Lógica GEMINI AI (Chef Mágico) ---
-            const generateListFromChef = async () => {
-                if (!chefPrompt.trim()) return;
-                
-                // Verificación de API Key
-                if (!geminiApiKey) {
-                    setShowSettingsModal(true);
-                    return;
-                }
-
-                setIsChefLoading(true);
-                setChefItems(null);
-
-                try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiApiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{
-                                    text: `Eres un asistente de compras de supermercado experto. 
-                                    Tu tarea es analizar el siguiente texto del usuario (receta, menú o idea) y extraer una lista de ingredientes concretos.
-                                    
-                                    SI EL USUARIO INDICA CANTIDAD (ej: 'para 4 personas', '2 kilos'), DEBES CALCULAR Y ESTIMAR LA CANTIDAD NECESARIA EN EL CAMPO 'quantity'.
-                                    
-                                    Devuelve ÚNICAMENTE un JSON array válido con este formato para cada ítem:
-                                    [{"name": "Producto", "category": "id_categoria", "quantity": "cantidad estimada (ej: 2kg, 1 paquete, 500g)"}]
-                                    
-                                    Las categorías permitidas son EXACTAMENTE: 'verdureria', 'carniceria', 'lacteos', 'almacen', 'limpieza', 'varios'.
-                                    
-                                    Texto del usuario: "${chefPrompt}"`
-                                }]
-                            }]
-                        })
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.error) {
-                         throw new Error(data.error.message);
-                    }
-
-                    let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (rawText) {
-                        // Limpieza básica de markdown
-                        rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-                        const items = JSON.parse(rawText);
-                        setChefItems(items);
-                    }
-                } catch (error) {
-                    console.error("Error Chef AI:", error);
-                    alert("Error: Verifica tu API Key o tu conexión. \nDetalle: " + error.message);
-                } finally {
-                    setIsChefLoading(false);
-                }
-            };
-
-            const addChefItemsToCart = () => {
-                if (!chefItems) return;
-                
-                chefItems.forEach(item => {
-                    const displayName = item.quantity ? `${item.name} (${item.quantity})` : item.name;
-                    
-                    if (!activeListItems.some(i => i.name.toLowerCase().includes(item.name.toLowerCase()))) {
-                        const newItem = {
-                            id: `chef-${Date.now()}-${Math.random()}`,
-                            name: displayName,
-                            category: item.category,
-                            uniqueId: `li-${Date.now()}-${Math.random()}`,
-                            checked: false
-                        };
-                        setActiveListItems(prev => [...prev, newItem]);
-                        
-                        setInventory(prev => {
-                            if (!prev.some(inv => inv.name.toLowerCase() === item.name.toLowerCase())) {
-                                return [...prev, { 
-                                    id: `inv-${Date.now()}-${Math.random()}`,
-                                    name: item.name, 
-                                    category: item.category,
-                                    createdAt: Date.now()
-                                }].sort((a,b) => a.name.localeCompare(b.name));
-                            }
-                            return prev;
-                        });
-                    }
-                });
-                
-                setChefPrompt('');
-                setChefItems(null);
-                setView('active-list');
-            };
-
-
-            // --- Lógica CRUD Base ---
-            const handleSaveItem = () => {
-                if (!newItemName.trim()) return;
-                const itemData = { name: newItemName.trim(), category: newItemCategory };
-                
-                if (editingItem) {
-                    const updated = { ...editingItem, ...itemData };
-                    setInventory(prev => prev.map(i => i.id === editingItem.id ? updated : i));
-                    setActiveListItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, ...itemData } : i));
-                } else {
-                    const newItem = { id: `item-${Date.now()}`, ...itemData, createdAt: Date.now() };
-                    if (!inventory.some(i => i.name.toLowerCase() === newItem.name.toLowerCase())) {
-                        setInventory(prev => [...prev, newItem].sort((a,b) => a.name.localeCompare(b.name)));
-                    }
-                    addToActiveList(newItem);
-                }
-                setNewItemName(''); setEditingItem(null); setShowItemModal(false);
-            };
-
-            const addToActiveList = (item) => {
-                if (!activeListItems.some(i => i.name === item.name)) {
-                    setActiveListItems(prev => [...prev, { ...item, uniqueId: `li-${Date.now()}`, checked: false }]);
-                }
-            };
-
-            const toggleCheck = (name) => {
-                if (navigator.vibrate) navigator.vibrate(10);
-                setActiveListItems(prev => prev.map(i => i.name === name ? { ...i, checked: !i.checked } : i));
-            };
-
-            const clearActiveList = () => {
-                if (confirm('¿Estás seguro de que quieres vaciar toda la lista de compras?')) {
-                    setActiveListItems([]);
-                    setView('home');
-                }
-            };
-
-            const saveCurrentList = () => {
-                if (!saveListName.trim()) return;
-                setSavedLists(prev => [{ id: `l-${Date.now()}`, name: saveListName, items: activeListItems, createdAt: Date.now(), completed: activeListItems.every(i => i.checked) }, ...prev]);
-                setSaveListName(''); setShowSaveModal(false); setView('history'); setActiveListItems([]);
-            };
-
-            // COMPARTIR
-            const shareList = async () => {
-                let text = "🛒 *SuperLista*\n\n";
-                const groups = {};
-                activeListItems.forEach(i => { if(!groups[i.category]) groups[i.category]=[]; groups[i.category].push(i); });
-                Object.keys(groups).forEach(cid => {
-                    text += `*${getCategoryDetails(cid).name}*\n`;
-                    groups[cid].forEach(i => text += `${i.checked ? '✅' : '⬜'} ${i.name}\n`);
-                    text += "\n";
-                });
-                
-                if (navigator.share) {
-                    try { await navigator.share({ title: 'Mi Compra', text }); } catch (e) {}
-                } else {
-                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                }
-            };
-            
-            const copyToClipboard = () => {
-                let text = "🛒 *SuperLista*\n\n";
-                const groups = {};
-                activeListItems.forEach(i => { if(!groups[i.category]) groups[i.category]=[]; groups[i.category].push(i); });
-                Object.keys(groups).forEach(cid => {
-                    text += `*${getCategoryDetails(cid).name}*\n`;
-                    groups[cid].forEach(i => text += `${i.checked ? '✅' : '⬜'} ${i.name}\n`);
-                    text += "\n";
-                });
-                
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand("copy");
-                    setShowToast(true);
-                    setTimeout(() => setShowToast(false), 2000);
-                } catch (e) { console.error(e); }
-                document.body.removeChild(textArea);
-            };
-
-            const filteredInv = inventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()));
-            const groupedActive = useMemo(() => {
-                const g = {}; activeListItems.forEach(i => { if(!g[i.category]) g[i.category]=[]; g[i.category].push(i); }); return g;
-            }, [activeListItems]);
-
-            // --- RENDERIZADO (VISTAS) ---
-            
-            // Componente Modal Base
-            const Modal = ({ children, onClose }) => (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl p-6 shadow-2xl pb-safe-bottom" onClick={e => e.stopPropagation()}>
-                        {children}
-                    </div>
-                    <div className="absolute inset-0 -z-10" onClick={onClose} />
+        <ul class="list-group">
+            <li v-for="(articulo, index) in articulos" :key="index" class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <input type="checkbox" v-model="articulo.comprado" class="mr-2">
+                    <span :class="{ 'tachado': articulo.comprado }">{{ articulo.nombre }}</span>
                 </div>
-            );
+                <button @click="eliminarArticulo(index)" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </li>
+        </ul>
 
-            // Modal de Configuración API Key
-            const SettingsModal = () => (
-                <Modal onClose={() => setShowSettingsModal(false)}>
-                    <div className="flex items-center gap-3 mb-4 text-slate-800">
-                        <Icon name="Key" size={28} className="text-green-600" />
-                        <h3 className="text-xl font-bold">Configurar Chef Mágico</h3>
-                    </div>
-                    <p className="text-sm text-slate-500 mb-4">
-                        Para usar la inteligencia artificial, necesitas una <strong>Google Gemini API Key</strong> gratuita.
-                    </p>
-                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4">
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Tu API Key</label>
-                        <input 
-                            type="password"
-                            className="w-full bg-white border border-slate-200 rounded p-2 text-sm focus:outline-none focus:border-green-500"
-                            placeholder="Pega tu clave aquí..."
-                            value={geminiApiKey}
-                            onChange={(e) => setGeminiApiKey(e.target.value)}
-                        />
-                    </div>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-xs text-green-600 underline block mb-6 text-center">
-                        Conseguir una API Key gratis aquí
-                    </a>
-                    <button 
-                        onClick={() => setShowSettingsModal(false)}
-                        className="w-full py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg active:scale-95"
-                    >
-                        Guardar y Continuar
-                    </button>
-                </Modal>
-            );
+        <div v-if="articulos.length > 0" class="text-right">
+            <button @click="borrarLista" class="btn btn-outline-danger btn-sm btn-borrar-todo">
+                <i class="fas fa-broom"></i> Borrar toda la lista
+            </button>
+        </div>
+    </div>
 
-            // VISTA: HOME
-            if (view === 'home') {
-                return (
-                    <div className="flex flex-col h-screen">
-                        <header className="bg-white pt-safe-top pb-3 px-4 shadow-sm z-10 sticky top-0 border-b border-gray-100">
-                            <div className="flex justify-between items-center h-12">
-                                <div className="flex items-center gap-3">
-                                    <AppIcon />
-                                    <div>
-                                        <h1 className="text-xl font-extrabold text-slate-800 leading-none">SuperLista</h1>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Planificador</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setView('chef')} className="p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-full active:scale-95 transition-transform" title="Chef Mágico">
-                                        <Icon name="ChefHat" size={26} />
-                                    </button>
-                                    <button onClick={() => setView('history')} className="p-2 text-gray-400 hover:text-green-600 rounded-full active:bg-gray-100 transition-colors">
-                                        <Icon name="History" size={26} />
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="mt-4 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg shadow-green-200 flex justify-between items-center">
-                                <div>
-                                    <span className="text-xs font-semibold text-green-100 uppercase tracking-wider">Tu changuito</span>
-                                    <p className="font-bold text-2xl leading-none">{activeListItems.length} <span className="text-base font-normal opacity-80">ítems</span></p>
-                                </div>
-                                {activeListItems.length > 0 && (
-                                    <button onClick={() => setView('active-list')} className="bg-white text-green-600 px-5 py-2.5 rounded-xl font-bold text-sm shadow active:scale-95 transition-transform">
-                                        Ir a Comprar
-                                    </button>
-                                )}
-                            </div>
-                        </header>
-                        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-32 no-scrollbar">
-                            <div className="relative mb-6">
-                                <div className="absolute left-4 top-3.5 text-gray-400"><Icon name="Search" size={20} /></div>
-                                <input className="w-full bg-white pl-12 pr-4 py-3.5 rounded-2xl shadow-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 text-lg" 
-                                    placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                            </div>
-                            <div className="space-y-3">
-                                {filteredInv.map(item => {
-                                    const cat = getCategoryDetails(item.category);
-                                    const isSel = activeListItems.some(i => i.name === item.name);
-                                    return (
-                                        <div key={item.id} onClick={() => isSel ? setActiveListItems(p => p.filter(i => i.name !== item.name)) : addToActiveList(item)}
-                                             className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all active:scale-[0.98] ${isSel ? 'bg-green-50 border-green-500' : 'bg-white border-transparent shadow-sm'}`}>
-                                            <div className="flex items-center gap-4 overflow-hidden">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${cat.color}`}><Icon name={cat.icon} size={20} /></div>
-                                                <span className={`font-semibold text-lg truncate ${isSel ? 'text-green-900' : 'text-slate-700'}`}>{item.name}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={(e) => { e.stopPropagation(); setEditingItem(item); setNewItemName(item.name); setNewItemCategory(item.category); setShowItemModal(true); }} 
-                                                    className="p-2 text-gray-300 active:text-green-600"><Icon name="Pencil" size={18}/></button>
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors ${isSel ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
-                                                    {isSel ? <Icon name="Check" size={14} className="text-white" strokeWidth={4} /> : <Icon name="Plus" size={14} className="text-gray-300" />}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                {filteredInv.length === 0 && searchTerm && (
-                                    <div className="text-center py-10">
-                                        <button onClick={() => { setNewItemName(searchTerm); setNewItemCategory('almacen'); setShowItemModal(true); }} 
-                                            className="text-green-600 font-bold bg-green-50 px-6 py-3 rounded-xl active:bg-green-100">+ Crear "{searchTerm}"</button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="fixed bottom-6 right-6 z-20">
-                            <button onClick={() => { setNewItemName(searchTerm); setNewItemCategory('almacen'); setShowItemModal(true); }} className="bg-slate-900 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform"><Icon name="Plus" size={32} /></button>
-                        </div>
-                        {showItemModal && (
-                            <Modal onClose={() => { setShowItemModal(false); setEditingItem(null); }}>
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="text-2xl font-bold text-slate-800">{editingItem ? 'Editar' : 'Nuevo'}</h3>
-                                    <button onClick={() => setShowItemModal(false)} className="bg-gray-100 p-2 rounded-full"><Icon name="X" size={20} className="text-gray-500" /></button>
-                                </div>
-                                <input autoFocus className="w-full bg-gray-50 border-2 border-transparent focus:border-green-500 focus:bg-white rounded-xl p-4 text-xl font-medium focus:outline-none mb-6"
-                                    placeholder="Nombre..." value={newItemName} onChange={e => setNewItemName(e.target.value)} />
-                                <div className="grid grid-cols-3 gap-3 mb-8">
-                                    {CATEGORIES.map(cat => (
-                                        <button key={cat.id} onClick={() => setNewItemCategory(cat.id)}
-                                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 ${newItemCategory === cat.id ? 'bg-green-50 border-green-500 text-green-800' : 'border-gray-100 text-gray-400 bg-white'}`}>
-                                            <div className="mb-1.5"><Icon name={cat.icon} size={20} /></div>
-                                            <span className="text-[10px] font-bold">{cat.name.split('/')[0]}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="flex gap-4">
-                                    {editingItem && <button onClick={() => { 
-                                        if(confirm('¿Borrar?')) { setInventory(p => p.filter(i => i.id !== editingItem.id)); setActiveListItems(p => p.filter(i => i.id !== editingItem.id)); setShowItemModal(false); }
-                                    }} className="p-4 rounded-xl bg-red-50 text-red-500 font-bold"><Icon name="Trash2" /></button>}
-                                    <button onClick={handleSaveItem} className="flex-1 py-4 bg-slate-900 text-white font-bold text-lg rounded-xl shadow-lg active:scale-95">Guardar</button>
-                                </div>
-                            </Modal>
-                        )}
-                    </div>
-                );
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                nuevoArticulo: '',
+                articulos: []
+            },
+            // Se ejecuta cuando la app se carga
+            mounted() {
+                const datosGuardados = localStorage.getItem('miListaDeCompras');
+                if (datosGuardados) {
+                    this.articulos = JSON.parse(datosGuardados);
+                }
+            },
+            // Observa cambios en 'articulos' para guardar automáticamente
+            watch: {
+                articulos: {
+                    handler(nuevaLista) {
+                        localStorage.setItem('miListaDeCompras', JSON.stringify(nuevaLista));
+                    },
+                    deep: true // Permite detectar cambios dentro de los objetos (como el checkbox)
+                }
+            },
+            methods: {
+                agregarArticulo() {
+                    if (this.nuevoArticulo.trim() !== '') {
+                        this.articulos.push({
+                            nombre: this.nuevoArticulo,
+                            comprado: false
+                        });
+                        this.nuevoArticulo = '';
+                    }
+                },
+                eliminarArticulo(index) {
+                    this.articulos.splice(index, 1);
+                },
+                borrarLista() {
+                    if (confirm('¿Estás seguro de que quieres borrar toda la lista?')) {
+                        this.articulos = [];
+                        localStorage.removeItem('miListaDeCompras');
+                    }
+                }
             }
-
-            // VISTA: CHEF (GEMINI)
-            if (view === 'chef') {
-                return (
-                    <div className="flex flex-col h-screen bg-green-50">
-                        <header className="bg-white pt-safe-top border-b border-gray-100 p-4 sticky top-0 z-10 flex items-center justify-between">
-                            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"><Icon name="ArrowLeft" size={24}/></button>
-                            <div className="flex items-center gap-2 text-green-700">
-                                <Icon name="Sparkles" size={20} className="animate-pulse-slow" />
-                                <h1 className="font-extrabold text-lg">Chef Mágico</h1>
-                            </div>
-                            <button onClick={() => setShowSettingsModal(true)} className="w-10 h-10 flex items-center justify-center rounded-full text-gray-400 hover:text-green-600 active:bg-gray-100">
-                                <Icon name="Settings" size={24} />
-                            </button>
-                        </header>
-
-                        <div className="flex-1 p-6 flex flex-col overflow-hidden">
-                            {!chefItems ? (
-                                <div className="flex flex-col h-full animate-in slide-in-from-bottom-4 overflow-y-auto">
-                                    <div className="mb-6 text-center">
-                                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <Icon name="ChefHat" size={40} />
-                                        </div>
-                                        <h2 className="text-2xl font-bold text-slate-800 mb-2">¿Qué quieres comer?</h2>
-                                        <p className="text-slate-500 text-sm">Escribe una receta, un plato ("Ñoquis con estofado") o tu plan para la semana.</p>
-                                    </div>
-                                    
-                                    <textarea 
-                                        className="w-full h-40 bg-white border-2 border-green-100 rounded-2xl p-4 text-lg focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all resize-none mb-6 placeholder-gray-300"
-                                        placeholder="Ej: Asado para 4 personas con ensalada mixta y picada..."
-                                        value={chefPrompt}
-                                        onChange={(e) => setChefPrompt(e.target.value)}
-                                        disabled={isChefLoading}
-                                    />
-
-                                    <button 
-                                        onClick={generateListFromChef}
-                                        disabled={!chefPrompt.trim() || isChefLoading}
-                                        className={`w-full py-4 rounded-xl font-bold text-lg text-white shadow-xl transition-all flex items-center justify-center gap-2 ${!chefPrompt.trim() || isChefLoading ? 'bg-gray-300' : 'bg-green-600 active:scale-95 hover:bg-green-700'}`}
-                                    >
-                                        {isChefLoading ? (
-                                            <> <Icon name="Loader2" className="animate-spin" /> Pensando... </>
-                                        ) : (
-                                            <> <Icon name="Wand2" /> Generar Lista </>
-                                        )}
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col h-full animate-in fade-in overflow-hidden">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 flex-shrink-0">
-                                        <Icon name="ListChecks" className="text-green-600" /> Ingredientes Detectados
-                                    </h3>
-                                    
-                                    <div className="flex-1 bg-white rounded-2xl shadow-sm border border-green-100 overflow-y-auto mb-4 overscroll-contain">
-                                        {chefItems.map((item, idx) => {
-                                            const cat = getCategoryDetails(item.category);
-                                            return (
-                                                <div key={idx} className="flex items-center gap-3 p-4 border-b border-gray-50 last:border-0">
-                                                    <div className={`p-2 rounded-full ${cat.color} bg-opacity-20`}>
-                                                        <Icon name={cat.icon} size={16} />
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-medium text-slate-700 block">{item.name}</span>
-                                                        {item.quantity && <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md">{item.quantity}</span>}
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-
-                                    <div className="flex gap-4 flex-shrink-0 pt-2 pb-4">
-                                        <button onClick={() => setChefItems(null)} className="flex-1 py-4 text-slate-500 font-bold bg-white rounded-xl border border-gray-200">Cancelar</button>
-                                        <button onClick={addChefItemsToCart} className="flex-1 py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg active:scale-95">
-                                            Agregar Todo ({chefItems.length})
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        {showSettingsModal && <SettingsModal />}
-                    </div>
-                );
-            }
-
-            // VISTA: LISTA ACTIVA (COMPRA)
-            if (view === 'active-list') {
-                const total = activeListItems.length;
-                const checked = activeListItems.filter(i => i.checked).length;
-                return (
-                    <div className="flex flex-col h-screen">
-                        <header className="bg-white pt-safe-top sticky top-0 z-20 shadow-sm">
-                            <div className="flex items-center justify-between p-2 h-16 px-4">
-                                <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 active:bg-gray-100"><Icon name="ArrowLeft" size={24}/></button>
-                                <div className="text-center">
-                                    <h2 className="font-extrabold text-slate-800 text-lg">Modo Compra</h2>
-                                    <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest">{checked}/{total} listo</div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <button onClick={clearActiveList} disabled={total===0} className="w-10 h-10 flex items-center justify-center rounded-full text-red-500 active:bg-red-50 disabled:opacity-30" title="Vaciar Lista"><Icon name="Trash2" size={22}/></button>
-                                    <button onClick={copyToClipboard} disabled={total===0} className="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 active:bg-gray-100 disabled:opacity-30"><Icon name="Copy" size={22}/></button>
-                                    <button onClick={shareList} disabled={total===0} className="w-10 h-10 flex items-center justify-center rounded-full text-green-600 active:bg-green-50 disabled:opacity-30"><Icon name="Share2" size={22}/></button>
-                                    <button onClick={() => setShowSaveModal(true)} disabled={total===0} className="text-green-600 font-bold text-sm px-2">Guardar</button>
-                                </div>
-                            </div>
-                            <div className="h-1.5 bg-gray-100 w-full"><div className="h-full bg-gradient-to-r from-green-400 to-emerald-400 transition-all duration-500" style={{width: `${total ? (checked/total)*100 : 0}%`}} /></div>
-                        </header>
-                        <div className="flex-1 overflow-y-auto p-4 pb-10 no-scrollbar">
-                            {total === 0 ? <div className="flex flex-col items-center justify-center h-full text-gray-400"><p>Lista vacía</p></div> : 
-                                Object.keys(groupedActive).map(cid => {
-                                    const cat = getCategoryDetails(cid);
-                                    return (
-                                        <div key={cid} className="mb-6 animate-in slide-in-from-bottom-4">
-                                            <div className="flex items-center gap-2 mb-3 px-1 sticky top-0 z-10"><span className={`p-1.5 rounded-lg ${cat.color}`}><Icon name={cat.icon} size={16}/></span><h3 className="font-extrabold text-slate-700 text-sm uppercase">{cat.name}</h3></div>
-                                            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                                                {groupedActive[cid].map((item, idx) => (
-                                                    <div key={idx} onClick={() => toggleCheck(item.name)} className={`flex items-center p-4 border-b border-slate-50 last:border-0 cursor-pointer active:bg-gray-50 ${item.checked ? 'bg-slate-50/50' : 'bg-white'}`}>
-                                                        <div className={`w-8 h-8 rounded-full border-2 mr-4 flex items-center justify-center transition-all ${item.checked ? 'bg-green-500 border-green-500' : 'border-slate-300'}`}>{item.checked && <Icon name="Check" size={18} className="text-white" strokeWidth={4} />}</div>
-                                                        <span className={`text-lg font-medium ${item.checked ? 'text-gray-400 line-through' : 'text-slate-700'}`}>{item.name}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            }
-                        </div>
-                        {showSaveModal && (
-                            <Modal onClose={() => setShowSaveModal(false)}>
-                                <h3 className="text-2xl font-bold text-slate-800 mb-2">Finalizar</h3>
-                                <p className="text-slate-500 mb-6">Guardar en historial:</p>
-                                <div className="bg-gray-50 p-4 rounded-xl mb-6"><input autoFocus className="w-full bg-transparent text-xl font-bold text-slate-800 focus:outline-none" placeholder="Ej: Compra Semanal" value={saveListName} onChange={e => setSaveListName(e.target.value)}/></div>
-                                <div className="flex gap-4"><button onClick={() => setShowSaveModal(false)} className="flex-1 py-4 text-slate-500 font-bold bg-gray-100 rounded-xl">Volver</button><button onClick={saveCurrentList} className="flex-1 py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg">Guardar</button></div>
-                            </Modal>
-                        )}
-                        <div className={`fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl transition-all ${showToast ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}><span className="font-bold text-sm flex items-center gap-2"><Icon name="Check" size={16}/> Copiado</span></div>
-                    </div>
-                );
-            }
-
-            // VISTA: HISTORIAL
-            if (view === 'history') {
-                return (
-                    <div className="flex flex-col h-screen">
-                        <header className="bg-white pt-safe-top border-b border-gray-100 p-4 sticky top-0 z-10 flex items-center justify-between">
-                            <button onClick={() => setView('home')} className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"><Icon name="ArrowLeft" size={24}/></button>
-                            <h1 className="font-extrabold text-slate-800 text-lg">Historial</h1><div className="w-10"/>
-                        </header>
-                        <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-                            {savedLists.length === 0 ? <div className="text-center py-20 text-gray-400"><p>Sin historial</p></div> : 
-                                <div className="grid gap-4">{savedLists.map(list => (
-                                    <div key={list.id} onClick={() => { setActiveListItems(list.items.map(i=>({...i, checked:false}))); setView('active-list'); }} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] cursor-pointer">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div><h3 className="font-bold text-slate-800 text-xl">{list.name}</h3><p className="text-xs font-bold text-gray-400 uppercase">{new Date(list.createdAt).toLocaleDateString()}</p></div>
-                                            <button onClick={(e) => { e.stopPropagation(); if(confirm('¿Borrar?')) setSavedLists(p => p.filter(l => l.id !== list.id)); }} className="text-gray-300 p-2"><Icon name="Trash2" size={20}/></button>
-                                        </div>
-                                        <div className="flex items-center gap-3"><div className="bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2"><Icon name="List" size={14}/><span className="text-sm font-bold text-slate-600">{list.items.length} ítems</span></div>{list.completed && <span className="bg-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"><Icon name="Check" size={12}/> Completa</span>}</div>
-                                    </div>
-                                ))}</div>
-                            }
-                        </div>
-                    </div>
-                );
-            }
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<SuperLista />);
+        });
     </script>
 </body>
 </html>
