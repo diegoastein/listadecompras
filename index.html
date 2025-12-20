@@ -6,39 +6,78 @@
     <title>Lista de Compras Pro</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        .tachado { text-decoration: line-through; color: gray; }
-        .container { max-width: 500px; margin-top: 50px; }
-        .btn-borrar-todo { margin-top: 20px; }
+        :root { --primary-color: #4a90e2; --danger-color: #e74c3c; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .tachado { text-decoration: line-through; color: #adb5bd; font-style: italic; }
+        .list-group-item { border-left: none; border-right: none; transition: all 0.3s; }
+        .list-group-item:hover { background-color: #f1f3f5; }
+        /* Animaciones de la lista */
+        .list-enter-active, .list-leave-active { transition: all 0.5s; }
+        .list-enter { opacity: 0; transform: translateX(30px); }
+        .list-leave-to { opacity: 0; transform: translateX(-30px); }
+        .badge-info { background-color: var(--primary-color); }
     </style>
 </head>
 <body>
-    <div id="app" class="container">
-        <h2 class="text-center mb-4">Lista de Compras</h2>
-        
-        <div class="input-group mb-3">
-            <input type="text" v-model="nuevoArticulo" @keyup.enter="agregarArticulo" class="form-control" placeholder="Agregar artículo...">
-            <div class="input-group-append">
-                <button @click="agregarArticulo" class="btn btn-primary">Agregar</button>
-            </div>
-        </div>
+    <div id="app" class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card p-4">
+                    <h2 class="text-center mb-4 text-dark font-weight-bold">🛍️ Mi Almacén</h2>
+                    
+                    <div class="d-flex justify-content-between mb-3 px-2">
+                        <small class="text-muted">Total: {{ articulos.length }}</small>
+                        <small class="text-primary font-weight-bold">Pendientes: {{ pendientes }}</small>
+                    </div>
 
-        <ul class="list-group">
-            <li v-for="(articulo, index) in articulos" :key="index" class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <input type="checkbox" v-model="articulo.comprado" class="mr-2">
-                    <span :class="{ 'tachado': articulo.comprado }">{{ articulo.nombre }}</span>
+                    <div class="input-group mb-2">
+                        <input type="text" v-model="nuevoArticulo" @keyup.enter="agregarArticulo" 
+                               class="form-control form-control-lg" placeholder="¿Qué necesitas comprar?">
+                        <div class="input-group-append">
+                            <button @click="agregarArticulo" class="btn btn-primary px-4">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small v-if="error" class="text-danger animate__animated animate__shakeX mb-3 d-block">{{ error }}</small>
+
+                    <hr>
+
+                    <ul class="list-group list-group-flush">
+                        <transition-group name="list">
+                            <li v-for="(articulo, index) in articulos" :key="articulo.id" 
+                                class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" :id="'check-'+index" v-model="articulo.comprado" class="custom-control-input">
+                                    <label class="custom-control-label h5 mb-0" :for="'check-'+index" :class="{ 'tachado': articulo.comprado }">
+                                        {{ articulo.nombre }}
+                                    </label>
+                                </div>
+                                <button @click="eliminarArticulo(index)" class="btn btn-link text-danger p-0">
+                                    <i class="fas fa-times-circle fa-lg"></i>
+                                </button>
+                            </li>
+                        </transition-group>
+                    </ul>
+
+                    <div v-if="articulos.length === 0" class="text-center py-5 text-muted animate__animated animate__fadeIn">
+                        <i class="fas fa-shopping-basket fa-3x mb-3 opacity-25"></i>
+                        <p>Tu lista está vacía. ¡Empieza a agregar productos!</p>
+                    </div>
+
+                    <div v-if="articulos.length > 0" class="mt-4 pt-3 border-top d-flex justify-content-between">
+                        <button @click="compartirWhatsApp" class="btn btn-success btn-sm rounded-pill">
+                            <i class="fab fa-whatsapp"></i> Compartir
+                        </button>
+                        <button @click="borrarLista" class="btn btn-outline-danger btn-sm rounded-pill">
+                            <i class="fas fa-trash-alt"></i> Vaciar Lista
+                        </button>
+                    </div>
                 </div>
-                <button @click="eliminarArticulo(index)" class="btn btn-danger btn-sm">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </li>
-        </ul>
-
-        <div v-if="articulos.length > 0" class="text-right">
-            <button @click="borrarLista" class="btn btn-outline-danger btn-sm btn-borrar-todo">
-                <i class="fas fa-broom"></i> Borrar toda la lista
-            </button>
+            </div>
         </div>
     </div>
 
@@ -48,42 +87,65 @@
             el: '#app',
             data: {
                 nuevoArticulo: '',
+                error: '',
                 articulos: []
             },
-            // Se ejecuta cuando la app se carga
-            mounted() {
-                const datosGuardados = localStorage.getItem('miListaDeCompras');
-                if (datosGuardados) {
-                    this.articulos = JSON.parse(datosGuardados);
+            computed: {
+                pendientes() {
+                    return this.articulos.filter(a => !a.comprado).length;
                 }
             },
-            // Observa cambios en 'articulos' para guardar automáticamente
+            mounted() {
+                try {
+                    const storage = localStorage.getItem('lista_v2');
+                    this.articulos = storage ? JSON.parse(storage) : [];
+                } catch(e) {
+                    console.error("Error cargando datos");
+                    this.articulos = [];
+                }
+            },
             watch: {
                 articulos: {
-                    handler(nuevaLista) {
-                        localStorage.setItem('miListaDeCompras', JSON.stringify(nuevaLista));
+                    handler(val) {
+                        localStorage.setItem('lista_v2', JSON.stringify(val));
                     },
-                    deep: true // Permite detectar cambios dentro de los objetos (como el checkbox)
+                    deep: true
                 }
             },
             methods: {
                 agregarArticulo() {
-                    if (this.nuevoArticulo.trim() !== '') {
-                        this.articulos.push({
-                            nombre: this.nuevoArticulo,
-                            comprado: false
-                        });
-                        this.nuevoArticulo = '';
+                    this.error = '';
+                    const nombre = this.nuevoArticulo.trim();
+                    
+                    if (!nombre) return;
+                    
+                    // Validación de duplicados
+                    if (this.articulos.some(a => a.nombre.toLowerCase() === nombre.toLowerCase())) {
+                        this.error = "Este artículo ya está en tu lista.";
+                        return;
                     }
+
+                    this.articulos.unshift({ // Agregar al inicio
+                        id: Date.now(),
+                        nombre: nombre,
+                        comprado: false
+                    });
+                    this.nuevoArticulo = '';
                 },
                 eliminarArticulo(index) {
                     this.articulos.splice(index, 1);
                 },
                 borrarLista() {
-                    if (confirm('¿Estás seguro de que quieres borrar toda la lista?')) {
+                    if (confirm('¿Deseas eliminar todos los productos?')) {
                         this.articulos = [];
-                        localStorage.removeItem('miListaDeCompras');
                     }
+                },
+                compartirWhatsApp() {
+                    const lista = this.articulos
+                        .map(a => `${a.comprado ? '✅' : '⬜'} ${a.nombre}`)
+                        .join('\n');
+                    const texto = encodeURIComponent(`📝 *Mi Lista de Compras:*\n\n${lista}`);
+                    window.open(`https://wa.me/?text=${texto}`);
                 }
             }
         });
