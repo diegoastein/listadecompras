@@ -308,29 +308,27 @@
 
 
            // --- Lógica CRUD Base ---
-const handleSaveItem = () => {
+            const handleSaveItem = () => {
 
-    if (!newItemName.trim()) return;
-    const itemData = { name: newItemName.trim(), category: newItemCategory };
-    
-    if (editingItem) {
-        const updated = { ...editingItem, ...itemData };
-        setInventory(prev => prev.map(i => i.id === editingItem.id ? updated : i));
-        setActiveListItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, ...itemData } : i));
-    } else {
-        const newItem = { id: `item-${Date.now()}`, ...itemData, createdAt: Date.now() };
-        if (!inventory.some(i => i.name.toLowerCase() === newItem.name.toLowerCase())) {
-            setInventory(prev => [...prev, newItem].sort((a,b) => a.name.localeCompare(b.name)));
-        }
-        addToActiveList(newItem);
-    }
+                if (!newItemName.trim()) return;
+                const itemData = { name: newItemName.trim(), category: newItemCategory };
+                
+                if (editingItem) {
+                    const updated = { ...editingItem, ...itemData };
+                    setInventory(prev => prev.map(i => i.id === editingItem.id ? updated : i));
+                    setActiveListItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, ...itemData } : i));
+                } else {
+                    const newItem = { id: `item-${Date.now()}`, ...itemData, createdAt: Date.now() };
+                    if (!inventory.some(i => i.name.toLowerCase() === newItem.name.toLowerCase())) {
+                        setInventory(prev => [...prev, newItem].sort((a,b) => a.name.localeCompare(b.name)));
+                    }
+                    addToActiveList(newItem);
+                }
 
-    setNewItemName('');
-    setEditingItem(null);
-    setShowItemModal(false);
-    setSearchTerm(''); // 👈 ESTA es la línea clave
-};
-
+                setNewItemName('');
+                setEditingItem(null);
+                setShowItemModal(false);
+                setSearchTerm(''); // 👈 ESTA es la línea clave
             };
 
             const addToActiveList = (item) => {
@@ -727,4 +725,3 @@ const handleSaveItem = () => {
     </script>
 </body>
 </html>
-```0
