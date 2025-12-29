@@ -85,18 +85,20 @@
         };
 
         // --- DATOS Y CATEGORÍAS ---
-        const CATEGORIES = [
+       const CATEGORIES = [
     { id: 'verdureria', name: 'Verdulería', icon: 'Apple', color: 'bg-green-100 text-green-700' },
     { id: 'carniceria', name: 'Carnicería', icon: 'Beef', color: 'bg-red-100 text-red-700' },
     { id: 'lacteos', name: 'Lácteos / Frescos', icon: 'Milk', color: 'bg-blue-100 text-blue-700' },
     { id: 'almacen', name: 'Almacén', icon: 'Cookie', color: 'bg-orange-100 text-orange-700' },
-    { id: 'bebidas', name: 'Bebidas', icon: 'Wine', color: 'bg-cyan-100 text-cyan-700' },
+    { id: 'bebidas', name: 'Bebidas', icon: 'Package', color: 'bg-cyan-100 text-cyan-700' },
     { id: 'limpieza', name: 'Limpieza', icon: 'SprayCan', color: 'bg-purple-100 text-purple-700' },
-    { id: 'higiene', name: 'Higiene personal', icon: 'Bath', color: 'bg-pink-100 text-pink-700' },
-    { id: 'mascotas', name: 'Mascotas', icon: 'Dog', color: 'bg-amber-100 text-amber-700' },
-    { id: 'farmacia', name: 'Farmacia', icon: 'Pill', color: 'bg-rose-100 text-rose-700' },
+    { id: 'higiene', name: 'Higiene personal', icon: 'Package', color: 'bg-pink-100 text-pink-700' },
+    { id: 'mascotas', name: 'Mascotas', icon: 'Package', color: 'bg-amber-100 text-amber-700' },
+    { id: 'farmacia', name: 'Farmacia', icon: 'Package', color: 'bg-rose-100 text-rose-700' },
     { id: 'otros', name: 'Otros', icon: 'Package', color: 'bg-gray-100 text-gray-700' }
 ];
+
+
 
 
         const getCategoryDetails = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[5];
