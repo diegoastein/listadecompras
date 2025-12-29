@@ -136,10 +136,6 @@
     }
 ];
 
-
-
-
-
         const getCategoryDetails = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[5];
 
         const DEFAULT_INVENTORY = [
@@ -328,7 +324,7 @@
                 setNewItemName('');
                 setEditingItem(null);
                 setShowItemModal(false);
-                setSearchTerm(''); // 👈 ESTA es la línea clave
+                setSearchTerm(''); // 👈 Limpia la búsqueda al crear uno nuevo
             };
 
             const addToActiveList = (item) => {
@@ -500,7 +496,15 @@
                                     const cat = getCategoryDetails(item.category);
                                     const isSel = activeListItems.some(i => i.name === item.name);
                                     return (
-                                        <div key={item.id} onClick={() => isSel ? setActiveListItems(p => p.filter(i => i.name !== item.name)) : addToActiveList(item)}
+                                        <div key={item.id} 
+                                             onClick={() => {
+                                                 if (isSel) {
+                                                     setActiveListItems(p => p.filter(i => i.name !== item.name));
+                                                 } else {
+                                                     addToActiveList(item);
+                                                     setSearchTerm(''); // 🔥 ¡Aquí está la magia! Limpia la búsqueda.
+                                                 }
+                                             }}
                                              className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all active:scale-[0.98] ${isSel ? 'bg-green-50 border-green-500' : 'bg-white border-transparent shadow-sm'}`}>
                                             <div className="flex items-center gap-4 overflow-hidden">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${cat.color}`}><Icon name={cat.icon} size={20} /></div>
