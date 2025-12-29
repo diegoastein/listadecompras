@@ -93,6 +93,8 @@
             { id: 'limpieza', name: 'Limpieza/Perf', icon: 'SprayCan', color: 'bg-purple-100 text-purple-700' },
             { id: 'bebidas', name: 'Bebidas', icon: 'Package', color: 'bg-gray-100 text-gray-700' },
             { id: 'varios', name: 'Varios', icon: 'Package', color: 'bg-gray-100 text-gray-700' }
+            { id: 'higiene personal', name: 'Higiene personal', icon: 'Package', color: 'bg-gray-100 text-gray-700' }
+            { id: 'otros', name: 'Otros', icon: 'Package', color: 'bg-gray-100 text-gray-700' }
         ];
 
         const getCategoryDetails = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[5];
@@ -262,23 +264,28 @@
             };
 
 
-            // --- Lógica CRUD Base ---
-            const handleSaveItem = () => {
-                if (!newItemName.trim()) return;
-                const itemData = { name: newItemName.trim(), category: newItemCategory };
-                
-                if (editingItem) {
-                    const updated = { ...editingItem, ...itemData };
-                    setInventory(prev => prev.map(i => i.id === editingItem.id ? updated : i));
-                    setActiveListItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, ...itemData } : i));
-                } else {
-                    const newItem = { id: `item-${Date.now()}`, ...itemData, createdAt: Date.now() };
-                    if (!inventory.some(i => i.name.toLowerCase() === newItem.name.toLowerCase())) {
-                        setInventory(prev => [...prev, newItem].sort((a,b) => a.name.localeCompare(b.name)));
-                    }
-                    addToActiveList(newItem);
-                }
-                setNewItemName(''); setEditingItem(null); setShowItemModal(false);
+            // --- Lógica CRUD Base ---const handleSaveItem = () => {
+    if (!newItemName.trim()) return;
+    const itemData = { name: newItemName.trim(), category: newItemCategory };
+    
+    if (editingItem) {
+        const updated = { ...editingItem, ...itemData };
+        setInventory(prev => prev.map(i => i.id === editingItem.id ? updated : i));
+        setActiveListItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, ...itemData } : i));
+    } else {
+        const newItem = { id: `item-${Date.now()}`, ...itemData, createdAt: Date.now() };
+        if (!inventory.some(i => i.name.toLowerCase() === newItem.name.toLowerCase())) {
+            setInventory(prev => [...prev, newItem].sort((a,b) => a.name.localeCompare(b.name)));
+        }
+        addToActiveList(newItem);
+    }
+
+    setNewItemName('');
+    setEditingItem(null);
+    setShowItemModal(false);
+    setSearchTerm(''); // 👈 ESTA es la línea clave
+};
+
             };
 
             const addToActiveList = (item) => {
